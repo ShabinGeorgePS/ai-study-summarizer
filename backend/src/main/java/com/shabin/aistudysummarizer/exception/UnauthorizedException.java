@@ -1,5 +1,5 @@
 package com.shabin.aistudysummarizer.exception;
 
-public class CustomException {
+public class UnauthorizedException {
     
 }
