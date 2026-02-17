@@ -25,4 +25,40 @@ export const authService = {
             throw parsedError;
         }
     },
+
+    // Request password reset
+    forgotPassword: async (email) => {
+        try {
+            const response = await api.post('/auth/forgot-password', { email });
+            return response.data;
+        } catch (error) {
+            const parsedError = parseApiError(error);
+            throw parsedError;
+        }
+    },
+
+    // Verify reset token
+    verifyResetToken: async (token) => {
+        try {
+            const response = await api.get('/auth/verify-reset-token', { params: { token } });
+            return response.data;
+        } catch (error) {
+            const parsedError = parseApiError(error);
+            throw parsedError;
+        }
+    },
+
+    // Reset password
+    resetPassword: async (token, newPassword) => {
+        try {
+            const response = await api.post('/auth/reset-password', {
+                token,
+                newPassword
+            });
+            return response.data;
+        } catch (error) {
+            const parsedError = parseApiError(error);
+            throw parsedError;
+        }
+    },
 };
