@@ -40,10 +40,10 @@ export const documentService = {
         }
     },
 
-    // Summarize document
-    summarizeDocument: async (documentId) => {
+    // Summarize document with MCQ count
+    summarizeDocument: async (documentId, mcqCount = 5) => {
         try {
-            const response = await api.post(`/summarize/${documentId}`);
+            const response = await api.post(`/summarize/${documentId}`, { mcqCount });
             return response.data;
         } catch (error) {
             const parsedError = parseApiError(error);

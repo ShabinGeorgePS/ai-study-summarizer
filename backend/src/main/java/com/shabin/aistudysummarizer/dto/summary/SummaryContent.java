@@ -1,5 +1,6 @@
 package com.shabin.aistudysummarizer.dto.summary;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SummaryContent {
     private String executiveSummary;
     private List<String> sectionSummary;

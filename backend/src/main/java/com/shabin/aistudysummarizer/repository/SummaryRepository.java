@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface SummaryRepository extends JpaRepository<Summary, UUID> {
     List<Summary> findByUserId(UUID userId);
+
+    List<Summary> findByUserEmail(String email);
 }

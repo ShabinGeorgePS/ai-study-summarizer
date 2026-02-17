@@ -52,7 +52,7 @@ export const parseApiError = (error) => {
 
         case 500: // Internal Server Error
             return {
-                message: 'Server error. Please try again later.',
+                message: data?.message || 'Server error. Please try again later.',
                 fields: {}
             };
 

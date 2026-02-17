@@ -4,7 +4,7 @@ import { logError } from '../utils/errorHandler';
 
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-const API_TIMEOUT = import.meta.env.VITE_API_TIMEOUT || 30000; // 30 seconds
+const API_TIMEOUT = import.meta.env.VITE_API_TIMEOUT || 120000; // 30 seconds
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
 
@@ -17,12 +17,15 @@ const api = axios.create({
     },
 });
 
-// Request interceptor - attach JWT token to every request
+// Request interceptor - attach JWT token to every request (except auth endpoints)
 api.interceptors.request.use(
     (config) => {
-        const token = tokenStorage.getToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        const isAuthEndpoint = config.url?.includes('/auth/login') || config.url?.includes('/auth/register');
+        if (!isAuthEndpoint) {
+            const token = tokenStorage.getToken();
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
         }
 
         // Log request in development mode
