@@ -35,6 +35,12 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column
+    private String resetToken;
+
+    @Column
+    private LocalDateTime resetTokenExpiry;
+
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();

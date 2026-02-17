@@ -31,7 +31,7 @@ public class Summary {
     @JoinColumn(name = "document_id", nullable = false)
     private Document document;
 
-    @Column(columnDefinition = "jsonb", nullable = false)
+    @Column(name = "summary_json", columnDefinition = "text", nullable = false, length = Integer.MAX_VALUE)
     private String summaryJson;
 
     @Column(nullable = false)

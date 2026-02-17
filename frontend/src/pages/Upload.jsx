@@ -10,9 +10,10 @@ const Upload = () => {
     const navigate = useNavigate();
     const { logout } = useAuth();
 
-    const [uploadType, setUploadType] = useState('pdf'); // 'pdf', 'image', 'url'
+    const [uploadType, setUploadType] = useState('pdf'); // 'pdf', 'image', 'docx', 'pptx', 'txt', 'url'
     const [file, setFile] = useState(null);
     const [url, setUrl] = useState('');
+    const [mcqCount, setMcqCount] = useState(5); // Number of MCQs to generate
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -48,12 +49,13 @@ const Upload = () => {
                     setLoading(false);
                     return;
                 }
+                // Auto-detect file type or use the selected upload type
                 response = await documentService.uploadPDF(file);
             }
 
-            // After upload, trigger summarization
+            // After upload, trigger summarization with MCQ count
             if (response.documentId) {
-                const summaryResponse = await documentService.summarizeDocument(response.documentId);
+                const summaryResponse = await documentService.summarizeDocument(response.documentId, mcqCount);
                 // Navigate to results page
                 navigate(`/results/${summaryResponse.id}`);
             }
@@ -99,34 +101,26 @@ const Upload = () => {
 
                 <Card className="p-8">
                     {/* Upload Type Selector */}
-                    <div className="flex space-x-2 mb-6 bg-gray-100 p-1 rounded-lg">
-                        <button
-                            onClick={() => setUploadType('pdf')}
-                            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${uploadType === 'pdf'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                        >
-                            PDF
-                        </button>
-                        <button
-                            onClick={() => setUploadType('image')}
-                            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${uploadType === 'image'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                        >
-                            Image
-                        </button>
-                        <button
-                            onClick={() => setUploadType('url')}
-                            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${uploadType === 'url'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                        >
-                            URL
-                        </button>
+                    <div className="flex flex-wrap gap-2 mb-6 bg-gray-100 p-2 rounded-lg">
+                        {[
+                            { value: 'pdf', label: 'PDF' },
+                            { value: 'image', label: 'Image' },
+                            { value: 'docx', label: 'Word' },
+                            { value: 'pptx', label: 'PowerPoint' },
+                            { value: 'txt', label: 'Text' },
+                            { value: 'url', label: 'URL' }
+                        ].map(type => (
+                            <button
+                                key={type.value}
+                                onClick={() => setUploadType(type.value)}
+                                className={`py-2 px-4 rounded-md font-medium transition-all ${uploadType === type.value
+                                        ? 'bg-white text-indigo-600 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                    }`}
+                            >
+                                {type.label}
+                            </button>
+                        ))}
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -147,12 +141,24 @@ const Upload = () => {
                         ) : (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Select {uploadType === 'pdf' ? 'PDF' : 'Image'} File
+                                    Select {
+                                        uploadType === 'pdf' ? 'PDF' :
+                                        uploadType === 'image' ? 'Image' :
+                                        uploadType === 'docx' ? 'Word Document' :
+                                        uploadType === 'pptx' ? 'PowerPoint' :
+                                        uploadType === 'txt' ? 'Text File' : 'File'
+                                    }
                                 </label>
                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition-colors">
                                     <input
                                         type="file"
-                                        accept={uploadType === 'pdf' ? '.pdf' : 'image/*'}
+                                        accept={
+                                            uploadType === 'pdf' ? '.pdf' :
+                                            uploadType === 'image' ? 'image/*' :
+                                            uploadType === 'docx' ? '.doc,.docx' :
+                                            uploadType === 'pptx' ? '.ppt,.pptx' :
+                                            uploadType === 'txt' ? '.txt,.md,.markdown' : '*'
+                                        }
                                         onChange={handleFileChange}
                                         className="hidden"
                                         id="file-upload"
@@ -165,12 +171,38 @@ const Upload = () => {
                                             {file ? file.name : 'Click to upload or drag and drop'}
                                         </p>
                                         <p className="text-sm text-gray-500">
-                                            {uploadType === 'pdf' ? 'PDF files only' : 'PNG, JPG, JPEG up to 10MB'}
+                                            {
+                                                uploadType === 'pdf' ? 'PDF files only' :
+                                                uploadType === 'image' ? 'PNG, JPG, JPEG, GIF up to 10MB' :
+                                                uploadType === 'docx' ? 'DOC, DOCX files' :
+                                                uploadType === 'pptx' ? 'PPT, PPTX files' :
+                                                uploadType === 'txt' ? 'TXT, MD, Markdown files' : 'Any file'
+                                            }
                                         </p>
                                     </label>
                                 </div>
                             </div>
                         )}
+
+                        {/* MCQ Count Selector */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Number of MCQs to Generate: <span className="text-indigo-600 font-bold">{mcqCount}</span>
+                            </label>
+                            <p className="text-xs text-gray-500 mb-3">Choose how many practice questions you want</p>
+                            <input
+                                type="range"
+                                min="3"
+                                max="20"
+                                value={mcqCount}
+                                onChange={(e) => setMcqCount(parseInt(e.target.value))}
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-2">
+                                <span>3</span>
+                                <span>20</span>
+                            </div>
+                        </div>
 
                         <Button
                             type="submit"

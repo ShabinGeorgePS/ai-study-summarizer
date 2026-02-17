@@ -1,17 +1,15 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import Input from '../components/common/Input';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { authService } from '../services/authService';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 
-const Register = () => {
+const ResetPassword = () => {
     const navigate = useNavigate();
-    const { register } = useAuth();
+    const [searchParams] = useSearchParams();
+    const token = searchParams.get('token');
 
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
         password: '',
         confirmPassword: '',
     });
@@ -20,8 +18,32 @@ const Register = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [verifying, setVerifying] = useState(true);
     const [apiError, setApiError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [tokenValid, setTokenValid] = useState(false);
+
+    // Verify token on mount
+    useEffect(() => {
+        const verifyToken = async () => {
+            if (!token) {
+                setApiError('No reset token provided');
+                setVerifying(false);
+                return;
+            }
+
+            try {
+                await authService.verifyResetToken(token);
+                setTokenValid(true);
+            } catch (error) {
+                setApiError(error.message || 'Invalid or expired reset token');
+            } finally {
+                setVerifying(false);
+            }
+        };
+
+        verifyToken();
+    }, [token]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -34,21 +56,10 @@ const Register = () => {
             setErrors(prev => ({ ...prev, [name]: '' }));
         }
         setApiError('');
-        setSuccessMessage('');
     };
 
     const validate = () => {
         const newErrors = {};
-
-        if (!formData.name.trim()) {
-            newErrors.name = 'Name is required';
-        }
-
-        if (!formData.email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is invalid';
-        }
 
         if (!formData.password) {
             newErrors.password = 'Password is required';
@@ -79,58 +90,77 @@ const Register = () => {
         setSuccessMessage('');
 
         try {
-            // Send only email and password to backend (backend doesn't use name)
-            const userData = {
-                email: formData.email,
-                password: formData.password
-            };
+            await authService.resetPassword(token, formData.password);
+            setSuccessMessage('Password reset successfully! Redirecting to login...');
 
-            const response = await register(userData);
-
-            // Registration successful - show success message and redirect to login
-            if (response.success) {
-                setSuccessMessage(response.message || 'Registration successful! Redirecting to login...');
-
-                // Redirect to login after 2 seconds
-                setTimeout(() => {
-                    navigate('/login');
-                }, 2000);
-            }
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
         } catch (error) {
-            // Handle parsed error from authService
-            if (error.fields && Object.keys(error.fields).length > 0) {
-                // Set field-specific errors
-                setErrors(error.fields);
-            }
-
-            // Set general error message
-            setApiError(error.message || 'Registration failed. Please try again.');
+            setApiError(error.message || 'Failed to reset password. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <div className="min-h-screen flex items-center justify-center p-4 py-12">
-            <div className="w-full max-w-md animate-[float_6s_ease-in-out_infinite]">
-
-                {/* Header */}
-                <div className="text-center mb-8 relative z-10">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-neon-purple to-neon-pink rounded-2xl mb-4 shadow-lg shadow-purple-500/30 transform transition-transform hover:scale-110 duration-300">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
+    if (verifying) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <div className="text-center">
+                    <div className="relative inline-block">
+                        <div className="absolute inset-0 bg-neon-purple/50 rounded-full blur-xl animate-pulse"></div>
+                        <div className="relative inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-neon-purple"></div>
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-                    <p className="text-gray-400">Join AI Study Summarizer today</p>
+                    <p className="mt-6 text-gray-400 animate-pulse">Verifying reset token...</p>
                 </div>
+            </div>
+        );
+    }
 
-                {/* Register Form */}
+    if (!tokenValid) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <div className="w-full max-w-md animate-[float_6s_ease-in-out_infinite]">
+                    <Card className="p-8 backdrop-blur-2xl bg-black/30 border border-white/10 shadow-2xl">
+                        <div className="text-center">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 rounded-2xl mb-4 shadow-lg shadow-red-500/30">
+                                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0-6a4 4 0 110 8 4 4 0 010-8z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold text-white mb-2">Invalid Reset Link</h2>
+                            <p className="text-gray-400 mb-6">{apiError}</p>
+                            <Link to="/forgot-password">
+                                <Button className="w-full">Request New Reset Link</Button>
+                            </Link>
+                        </div>
+                    </Card>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="w-full max-w-md animate-[float_6s_ease-in-out_infinite]">
                 <Card className="p-8 backdrop-blur-2xl bg-black/30 border border-white/10 shadow-2xl relative overflow-hidden group">
                     {/* Decorative glow background */}
                     <div className="absolute -top-24 -left-24 w-48 h-48 bg-neon-purple/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-neon-purple/30 transition-all duration-700"></div>
                     <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-neon-pink/20 rounded-full blur-[80px] pointer-events-none group-hover:bg-neon-pink/30 transition-all duration-700"></div>
 
+                    {/* Header */}
+                    <div className="text-center mb-8 relative z-10">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-neon-purple to-neon-pink rounded-2xl mb-4 shadow-lg shadow-purple-500/30 transform transition-transform group-hover:scale-110 duration-300">
+                            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                        </div>
+                        <h1 className="text-3xl font-bold text-white mb-2">Create New Password</h1>
+                        <p className="text-gray-400">Enter your new password below</p>
+                    </div>
+
+                    {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                         {successMessage && (
                             <div className="bg-green-500/10 border border-green-500/20 text-green-200 px-4 py-3 rounded-lg text-sm">
@@ -138,36 +168,14 @@ const Register = () => {
                             </div>
                         )}
 
-                        {apiError && (
+                        {apiError && !successMessage && (
                             <div className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-lg text-sm">
                                 {apiError}
                             </div>
                         )}
 
-                        <Input
-                            label="Full Name"
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            error={errors.name}
-                            placeholder="John Doe"
-                            autoComplete="name"
-                        />
-
-                        <Input
-                            label="Email Address"
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            error={errors.email}
-                            placeholder="you@example.com"
-                            autoComplete="email"
-                        />
-
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
                             <div className="relative">
                                 <input
                                     type={showPassword ? 'text' : 'password'}
@@ -176,7 +184,8 @@ const Register = () => {
                                     onChange={handleChange}
                                     placeholder="••••••••"
                                     autoComplete="new-password"
-                                    className={`w-full px-4 py-3 rounded-lg bg-white/5 border transition-all duration-300 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-neon-purple/50 ${
+                                    disabled={loading}
+                                    className={`w-full px-4 py-3 rounded-lg bg-white/5 border transition-all duration-300 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-neon-purple/50 disabled:opacity-50 ${
                                         errors.password
                                             ? 'border-red-500/50 focus:border-red-500'
                                             : 'border-white/10 hover:border-white/20'
@@ -215,7 +224,8 @@ const Register = () => {
                                     onChange={handleChange}
                                     placeholder="••••••••"
                                     autoComplete="new-password"
-                                    className={`w-full px-4 py-3 rounded-lg bg-white/5 border transition-all duration-300 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-neon-purple/50 ${
+                                    disabled={loading}
+                                    className={`w-full px-4 py-3 rounded-lg bg-white/5 border transition-all duration-300 placeholder-gray-500 text-white focus:outline-none focus:ring-2 focus:ring-neon-purple/50 disabled:opacity-50 ${
                                         errors.confirmPassword
                                             ? 'border-red-500/50 focus:border-red-500'
                                             : 'border-white/10 hover:border-white/20'
@@ -255,19 +265,18 @@ const Register = () => {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Creating account...
+                                    Resetting Password...
                                 </span>
                             ) : (
-                                'Create Account'
+                                'Reset Password'
                             )}
                         </Button>
                     </form>
 
                     <div className="mt-8 text-center relative z-10">
                         <p className="text-gray-400">
-                            Already have an account?{' '}
                             <Link to="/login" className="text-neon-purple hover:text-neon-pink font-medium transition-colors duration-300">
-                                Sign in
+                                Back to Sign In
                             </Link>
                         </p>
                     </div>
@@ -275,11 +284,11 @@ const Register = () => {
 
                 {/* Footer */}
                 <p className="text-center text-gray-600 text-sm mt-8">
-                    By signing up, you agree to our Terms of Service
+                    Secure password reset
                 </p>
             </div>
         </div>
     );
 };
 
-export default Register;
+export default ResetPassword;

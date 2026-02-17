@@ -23,4 +23,25 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<PasswordResetResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.requestPasswordReset(request));
+    }
+
+    @GetMapping("/verify-reset-token")
+    public ResponseEntity<?> verifyResetToken(@RequestParam String token) {
+        authService.verifyResetToken(token);
+        return ResponseEntity.ok(new Object() {
+            public final String message = "Token is valid";
+        });
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        String message = authService.resetPassword(request);
+        return ResponseEntity.ok(new Object() {
+            public final String msg = message;
+        });
+    }
 }

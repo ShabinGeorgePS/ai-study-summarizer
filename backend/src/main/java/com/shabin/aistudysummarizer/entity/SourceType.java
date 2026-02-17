@@ -4,5 +4,8 @@ public enum SourceType {
     PDF,
     IMAGE,
     URL,
-    TEXT
+    TEXT,
+    DOCX,
+    PPTX,
+    MARKDOWN
 }

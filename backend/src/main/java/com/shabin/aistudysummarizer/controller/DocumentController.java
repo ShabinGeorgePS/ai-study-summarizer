@@ -21,7 +21,7 @@ public class DocumentController {
     public ResponseEntity<DocumentUploadResponse> uploadDocument(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "title", required = false) String title,
-            @RequestParam(value = "sourceType", defaultValue = "PDF") SourceType sourceType) {
+            @RequestParam(value = "sourceType", required = false) SourceType sourceType) {
         return ResponseEntity.ok(
                 documentService.uploadDocument(file, title, sourceType));
     }
