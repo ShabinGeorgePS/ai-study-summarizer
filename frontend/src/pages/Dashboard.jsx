@@ -34,8 +34,8 @@ const Dashboard = () => {
     const handleDeleteSummary = async (summaryId) => {
         try {
             setDeleting(true);
-            await api.delete(`/summaries/${summaryId}`);
-            setSummaries(summaries.filter(s => s.id !== summaryId));
+            await api.delete(`/v1/summaries/${summaryId}`);
+            setSummaries(prev => prev.filter(s => s.id !== summaryId));
             setDeleteConfirm(null);
         } catch (err) {
             setError('Failed to delete summary');
@@ -117,7 +117,7 @@ const Dashboard = () => {
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {summaries.map((summary) => (
-                                <div key={summary.id} className="group">
+                                <div key={summary.id} className="group relative">
                                     <Link to={`/results/${summary.id}`}>
                                         <Card className="h-full p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-900/20 hover:border-neon-purple/50 bg-white/5 hover:bg-white/10 relative overflow-hidden">
                                             {/* Hover glow effect */}
@@ -158,7 +158,7 @@ const Dashboard = () => {
                                             e.stopPropagation();
                                             setDeleteConfirm(summary.id);
                                         }}
-                                        className="absolute top-4 right-4 z-20 p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute top-4 right-4 z-20 p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -6,19 +6,31 @@
   --color-dark-bg: #0f0f11;
   --color-glass-white: rgba(255, 255, 255, 0.05);
   --color-glass-border: rgba(255, 255, 255, 0.1);
-  
+
   --animate-float: float 6s ease-in-out infinite;
   --animate-glow: glow 2s ease-in-out infinite alternate;
-  
+  --animate-fadeInScale: fadeInScale 0.3s ease-out forwards;
+
   @keyframes float {
     0% { transform: translateY(0px); }
     50% { transform: translateY(-20px); }
     100% { transform: translateY(0px); }
   }
-  
+
   @keyframes glow {
     from { box-shadow: 0 0 10px -5px var(--color-neon-purple); }
     to { box-shadow: 0 0 20px 5px var(--color-neon-purple); }
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }
 

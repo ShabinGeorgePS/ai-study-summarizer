@@ -1,61 +1,125 @@
 package com.shabin.aistudysummarizer.controller;
 
+import com.shabin.aistudysummarizer.dto.ApiResponse;
+import com.shabin.aistudysummarizer.dto.summary.SummaryRequestDTO;
 import com.shabin.aistudysummarizer.dto.summary.SummaryResponse;
-import com.shabin.aistudysummarizer.service.GeminiService;
-import com.shabin.aistudysummarizer.service.SummaryService;
+import com.shabin.aistudysummarizer.service.ISummaryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
+/**
+ * REST API Controller for summary management.
+ * Handles all summary-related operations with v1 API versioning.
+ */
 @RestController
+@RequestMapping("/api/v1/summaries")
 @RequiredArgsConstructor
+@Tag(name = "Summaries", description = "Summary generation and management endpoints")
 public class SummaryController {
 
-    private final SummaryService summaryService;
-    private final GeminiService geminiService;
+    private final ISummaryService summaryService;
 
-    @PostMapping("/api/summarize/{documentId}")
-    public ResponseEntity<SummaryResponse> generateSummary(@PathVariable UUID documentId, @RequestBody(required = false) Map<String, Integer> body) {
-        Integer mcqCount = (body != null && body.containsKey("mcqCount")) ? body.get("mcqCount") : 5;
-        return ResponseEntity.ok(summaryService.generateSummary(documentId, mcqCount));
+    /**
+     * Generate a new summary for a document
+     */
+    @PostMapping("/generate")
+    @Operation(summary = "Generate a new summary", description = "Creates a new summary for the specified document")
+    public ResponseEntity<ApiResponse<SummaryResponse>> generateSummary(
+            @Valid @RequestBody SummaryRequestDTO request) {
+        SummaryResponse response = summaryService.generateSummary(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Summary generated successfully"));
     }
 
-    @GetMapping("/api/summaries")
-    public ResponseEntity<List<SummaryResponse>> getUserSummaries() {
-        return ResponseEntity.ok(summaryService.getUserSummaries());
+    /**
+     * Get user's summaries with pagination
+     */
+    @GetMapping
+    @Operation(summary = "Get user's summaries", description = "Retrieve all summaries for the authenticated user with pagination")
+    public ResponseEntity<ApiResponse<Page<SummaryResponse>>> getUserSummaries(
+            @Parameter(description = "Page number (0-indexed)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", example = "20")
+            @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sort by field", example = "createdAt")
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "DESC")
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Page<SummaryResponse> summaries = summaryService.getUserSummaries(pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(summaries, "Summaries retrieved successfully"));
     }
 
-    @GetMapping("/api/summaries/{id}")
-    public ResponseEntity<SummaryResponse> getSummary(@PathVariable UUID id) {
-        return ResponseEntity.ok(summaryService.getSummary(id));
+    /**
+     * Get a specific summary by ID
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "Get summary by ID", description = "Retrieve a specific summary by its unique identifier")
+    public ResponseEntity<ApiResponse<SummaryResponse>> getSummaryById(
+            @Parameter(description = "Summary ID (UUID)", example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable UUID id) {
+        SummaryResponse summary = summaryService.getSummaryById(id);
+        return ResponseEntity.ok(ApiResponse.success(summary));
     }
 
-    @GetMapping("/api/models")
-    public ResponseEntity<List<String>> listGeminiModels() {
-        return ResponseEntity.ok(geminiService.listAvailableModels());
+    /**
+     * Generate additional MCQs for a summary
+     */
+    @PostMapping("/{id}/mcqs")
+    @Operation(summary = "Generate more MCQs", description = "Generate additional multiple choice questions for an existing summary")
+    public ResponseEntity<ApiResponse<SummaryResponse>> generateMoreMcqs(
+            @Parameter(description = "Summary ID (UUID)")
+            @PathVariable UUID id) {
+        SummaryResponse response = summaryService.generateMoreMcqs(id);
+        return ResponseEntity.ok(ApiResponse.success(response, "MCQs generated successfully"));
     }
 
-    @PostMapping("/api/summaries/{summaryId}/generate-more/mcqs")
-    public ResponseEntity<SummaryResponse> generateMoreMcqs(@PathVariable UUID summaryId) {
-        return ResponseEntity.ok(summaryService.generateMoreMcqs(summaryId));
+    /**
+     * Generate additional flashcards for a summary
+     */
+    @PostMapping("/{id}/flashcards")
+    @Operation(summary = "Generate more flashcards", description = "Generate additional flashcards for an existing summary")
+    public ResponseEntity<ApiResponse<SummaryResponse>> generateMoreFlashcards(
+            @Parameter(description = "Summary ID (UUID)")
+            @PathVariable UUID id) {
+        SummaryResponse response = summaryService.generateMoreFlashcards(id);
+        return ResponseEntity.ok(ApiResponse.success(response, "Flashcards generated successfully"));
     }
 
-    @PostMapping("/api/summaries/{summaryId}/generate-more/flashcards")
-    public ResponseEntity<SummaryResponse> generateMoreFlashcards(@PathVariable UUID summaryId) {
-        return ResponseEntity.ok(summaryService.generateMoreFlashcards(summaryId));
+    /**
+     * Generate additional summary content
+     */
+    @PostMapping("/{id}/content")
+    @Operation(summary = "Generate more summary content", description = "Generate additional summary content for an existing summary")
+    public ResponseEntity<ApiResponse<SummaryResponse>> generateMoreSummary(
+            @Parameter(description = "Summary ID (UUID)")
+            @PathVariable UUID id) {
+        SummaryResponse response = summaryService.generateMoreSummary(id);
+        return ResponseEntity.ok(ApiResponse.success(response, "Summary content generated successfully"));
     }
 
-    @PostMapping("/api/summaries/{summaryId}/generate-more/summary")
-    public ResponseEntity<SummaryResponse> generateMoreSummary(@PathVariable UUID summaryId) {
-        return ResponseEntity.ok(summaryService.generateMoreSummary(summaryId));
-    }
-
-    @DeleteMapping("/api/summaries/{id}")
-    public ResponseEntity<Void> deleteSummary(@PathVariable UUID id) {
+    /**
+     * Delete a summary
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete summary", description = "Permanently delete a summary")
+    public ResponseEntity<Void> deleteSummary(
+            @Parameter(description = "Summary ID (UUID)")
+            @PathVariable UUID id) {
         summaryService.deleteSummary(id);
         return ResponseEntity.noContent().build();
     }
