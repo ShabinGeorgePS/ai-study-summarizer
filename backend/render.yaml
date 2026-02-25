@@ -1,0 +1,5 @@
+services:
+  - type: web
+    name: ai-study-summarizer-backend
+    env: docker
+    dockerfilePath: Dockerfile # If you prefer docker, otherwise we use native. Wait, let's use java native environment.
