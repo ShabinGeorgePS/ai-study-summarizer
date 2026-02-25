@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy pom.xml FIRST
 COPY backend/pom.xml .
 
-# Now Maven can read the POM
+# Download dependencies
 RUN mvn dependency:go-offline -B
 
 # Copy the source code
@@ -19,6 +19,17 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
+
+# ---- MOST IMPORTANT PART ----
+# Forward Render environment variables into the container
+ENV SPRING_DATASOURCE_URL=${DB_URL}
+ENV SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+ENV SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+
+ENV DB_URL=${DB_URL}
+ENV DB_USERNAME=${DB_USERNAME}
+ENV DB_PASSWORD=${DB_PASSWORD}
+# --------------------------------
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
