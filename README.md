@@ -340,9 +340,8 @@ This project is licensed under the **MIT License** - see [LICENSE](./LICENSE) fi
 
 **Project Maintainer:** Your Name
 - **Email:** your.email@example.com
-- **GitHub:** [@yourusername](https://github.com/yourusername)
-- **LinkedIn:** [Your Profile](https://linkedin.com/in/yourprofile)
-
+- **GitHub:** [@yShabinGeorgePS](https://github.com/ShabinGeorgePS)
+-
 ---
 
 **Made with ❤️ for students everywhere**
