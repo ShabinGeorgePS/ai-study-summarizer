@@ -1,38 +1,33 @@
-# Stage 1: Build
+# Stage 1: Build the application
 FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-# Copy only backend pom.xml first
+# Copy pom.xml FIRST
+COPY backend/pom.xml .
 
-
-# Download dependencies
+# Now Maven can read the POM
 RUN mvn dependency:go-offline -B
 
 # Copy the source code
-# Copy only backend pom.xml first
-COPY backend/pom.xml .
-
-# Copy backend source code
 COPY backend/src ./src
 
 # Build the application
 RUN mvn clean package -DskipTests -B
 
-# Stage 2: Run
+# Stage 2: Runtime image
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Add non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Copy jar from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose port
-EXPOSE 8080
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app
 
 USER appuser
+
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
