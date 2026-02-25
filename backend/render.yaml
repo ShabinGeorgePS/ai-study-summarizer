@@ -2,4 +2,21 @@ services:
   - type: web
     name: ai-study-summarizer-backend
     env: docker
-    dockerfilePath: Dockerfile # If you prefer docker, otherwise we use native. Wait, let's use java native environment.
+    dockerfilePath: Dockerfile
+    dockerCommand: []
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: DB_URL
+        value: ${DB_URL}
+      - key: DB_USERNAME
+        value: ${DB_USERNAME}
+      - key: DB_PASSWORD
+        value: ${DB_PASSWORD}
+        sync: false
+      - key: JWT_SECRET
+        value: ${JWT_SECRET}
+        sync: false
+      - key: GEMINI_API_KEY
+        value: ${GEMINI_API_KEY}
+        sync: false
